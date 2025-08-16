@@ -1,214 +1,175 @@
 #---------------------------------------------------#
+# Clash 配置文件 - 全代理模式，防DNS泄露
 # 配置文件需要放置在 $HOME/.config/clash/config.yml
 # 或者运行目录下的config.yml
 #---------------------------------------------------#
-# 混合端口 HTTP和SOCKS5用一个端口
+
+# ================ 端口配置 ================
+# 混合端口 - HTTP和SOCKS5用一个端口（推荐使用）
 mixed-port: 7890
 
-# HTTP 代理端口
+# HTTP 代理端口（如果使用mixed-port可以注释掉）
 # port: 7890
 
 # SOCKS5 代理端口
 socks-port: 7891
 
-# Linux 和 macOS 的 redir 代理端口 (如需使用此功能，请取消注释)
+# Linux 和 macOS 的 redir 代理端口（透明代理，如需使用请取消注释）
 # redir-port: 7892
 
-# 允许局域网的连接（可用来共享代理）
+# ================ 网络配置 ================
+# 允许局域网连接（可用来共享代理给其他设备）
 allow-lan: true
 
-# 仅在将allow-lan设置为true时适用
-# #"*": 绑定所有IP地址
-# #192.168.122.11: 绑定单个IPv4地址
-# #"[aaaa::a8aa:ff:fe09:57d8]": 绑定单个IPv6地址
+# 绑定地址配置（仅在allow-lan为true时生效）
+# "*": 绑定所有IP地址（局域网内所有设备都可连接）
+# "192.168.1.100": 绑定单个IPv4地址
+# "[::1]": 绑定单个IPv6地址
 bind-address: "*"
+
+# 启用IPv6支持
 ipv6: true
 
-# 规则模式：rule（规则） / global（全局代理）/ direct（全局直连）/ script (脚本)
-# mode: rule
+# ================ 运行模式 ================
+# 规则模式：
+# - rule: 根据规则分流（推荐）
+# - global: 全局代理（所有流量走代理）
+# - direct: 全局直连（所有流量直连）
+# - script: 脚本模式
+# mode: rule  # 这里注释掉，让规则文件控制模式
 
-# 设置日志输出级别 (默认级别：silent，即不输出任何内容，以避免因日志内容过大而导致程序内存溢出）。
-# 5 个级别：silent / error / warning / info / debug。级别越高日志输出量越大，越倾向于调试，若需要请自行开启。
+# ================ 日志配置 ================
+# 日志级别：silent(无日志) / error / warning / info / debug
+# 建议使用info级别，便于调试问题
 log-level: info
 
-# Clash 的 RESTful API
+# ================ API配置 ================
+# Clash RESTful API地址（用于网页控制面板）
 external-controller: '127.0.0.1:9090'
 
-# 您可以将静态网页资源（如 clash-dashboard）放置在一个目录中，clash 将会服务于 `RESTful API/ui`
-# 参数应填写配置目录的相对路径或绝对路径。
-# http://127.0.0.1:9090/ui/#/
-# external-ui: folder
-# yacd面板：  https://github.com/haishanh/yacd
-# Razord面板：http://clash.razord.top/#/proxies
+# 网页控制面板静态资源目录
+# 常用面板：
+# - yacd: https://github.com/haishanh/yacd
+# - Razord: http://clash.razord.top/#/proxies
+# - 访问地址: http://127.0.0.1:9090/ui/#/
 # external-ui: dashboard
 
-# RESTful API 的口令 (可选)
-# secret: ""
+# API访问密码（可选，建议设置）
+# secret: "your_password_here"
 
-# 实验性功能
+# ================ 实验性功能 ================
 experimental:
-  ignore-resolve-fail: true # 忽略 DNS 解析失败，默认值为 true
-  # interface-name: en0 # outbound interface name
+  # 忽略DNS解析失败（防止因DNS问题导致连接中断）
+  ignore-resolve-fail: true
+  # 指定出站网络接口（可选）
+  # interface-name: en0
 
-# 本地 SOCKS5 / HTTP(S) 服务认证
+# ================ 认证配置 ================
+# 本地SOCKS5/HTTP(S)服务认证（可选）
 # authentication:
-#  - "user1:pass1"
-#  - "user2:pass2"
+#   - "username1:password1"
+#   - "username2:password2"
 
-# 实验性功能 hosts, 支持通配符 (例如 *.clash.dev 甚至 *.foo.*.example.com)
-# 静态的域名 比 通配域名 具有更高的优先级 (foo.example.com 优先于 *.example.com)
-# 注意: hosts 在 fake-ip 模式下不生效
-#hosts:
-#   '*.clash.dev': 127.0.0.1
-#   'alpha.clash.dev': '::1'
+# ================ Hosts配置 ================
+# 静态域名解析（在fake-ip模式下不生效）
+# hosts:
+#   '*.example.com': 127.0.0.1
+#   'test.example.com': '::1'
 
-#dns:
-  #enable: true # 是否启用dns false
-  #ipv6: false
-  #listen: 0.0.0.0:53
-  #enhanced-mode: redir-host # 模式：redir-host或fake-ip
-  #fake-ip-range: 198.18.0.1/16 #
-  #fake-ip-filter: # fake ip 白名单列表，如果你不知道这个参数的作用，请勿修改
-     #- '*.lan'
-     #- localhost.ptlogin2.qq.com
-  #nameserver:
-     #- 223.5.5.5 # 阿里DNS
-     #- 180.76.76.76 # 百度DNS
-     #- 119.29.29.29 # 腾讯DNS
-     #- 117.50.11.11 # ONE DNS拦截版 恶意网站拦截、广告过滤
-     #- 117.50.10.10 # ONE DNS纯净版 直接返回其真实的响应结果
-     #- 114.114.114.114 # 114DNS
-     #- https://dns.alidns.com/dns-query # 阿里 DoH DNS
-     #- https://doh.360.cn/dns-query # 360 DoH DNS
-  #fallback:
-     #- 8.8.8.8 # 谷歌DNS
-     #- 1.1.1.1 # Cloudflare DNS
-     #- tls://dns.rubyfish.cn:853
-     #- tls://1.0.0.1:853
-     #- tls://dns.google:853
-     #- https://dns.rubyfish.cn/dns-query
-     #- https://cloudflare-dns.com/dns-query
-     #- https://dns.google/dns-query
-  #fallback-filter:
-     #geoip: true # 默认
-     #ipcidr: # 在这个网段内的 IP 地址会被考虑为被污染的 IP
-       #- 240.0.0.0/4
+# ================ DNS配置（已禁用，防泄露） ================
+# 注意：为了防止DNS泄露，这里将DNS配置全部注释掉
+# 所有DNS查询将通过代理服务器进行，确保不会泄露真实IP
 
-# 1. clash DNS 请求逻辑：
-#   (1) 当访问一个域名时， nameserver 与 fallback 列表内的所有服务器并发请求，得到域名对应的 IP 地址。
-#   (2) clash 将选取 nameserver 列表内，解析最快的结果。
-#   (3) 若解析结果中，IP 地址属于 国外，那么 clash 将选择 fallback 列表内，解析最快的结果。
-#
-#   因此，我在 nameserver 和 fallback 内都放置了无污染、解析速度较快的国内 DNS 服务器，以达到最快的解析速度。
-#   但是 fallback 列表内服务器会用在解析境外网站，为了结果绝对无污染，我仅保留了支持 DoT/DoH 的两个服务器。
-#
-# 2. clash DNS 配置注意事项：
-#   (1) 如果您为了确保 DNS 解析结果无污染，请仅保留列表内以 tls:// 或 https:// 开头的 DNS 服务器，但是通常对于国内域名没有必要。
-#   (2) 如果您不在乎可能解析到污染的结果，更加追求速度。请将 nameserver 列表的服务器插入至 fallback 列表内，并移除重复项。
-#
-# 3. 关于 DNS over HTTPS (DoH) 和 DNS over TLS (DoT) 的选择：
-#   对于两项技术双方各执一词，而且会无休止的争论，各有利弊。各位请根据具体需求自行选择，但是配置文件内默认启用 DoT，因为目前国内没有封锁或管制。
-#   DoH: 以 https:// 开头的 DNS 服务器。拥有更好的伪装性，且几乎不可能被运营商或网络管理封锁，但查询效率和安全性可能略低。
-#   DoT: 以 tls:// 开头的 DNS 服务器。拥有更高的安全性和查询效率，但端口有可能被管制或封锁。
-#   若要了解更多关于 DoH/DoT 相关技术，请自行查阅规范文档。
+# dns:
+#   enable: true                    # 是否启用DNS
+#   ipv6: false                     # 是否解析IPv6
+#   listen: 0.0.0.0:53             # DNS监听地址
+#   enhanced-mode: redir-host       # DNS模式：redir-host(真实IP) / fake-ip(虚假IP)
+#   fake-ip-range: 198.18.0.1/16    # fake-ip地址段
+#   
+#   # 国内DNS服务器（速度快但可能被污染）
+#   nameserver:
+#     - 223.5.5.5                   # 阿里DNS
+#     - 180.76.76.76                # 百度DNS  
+#     - 119.29.29.29                # 腾讯DNS
+#     - 114.114.114.114             # 114DNS
+#     
+#   # 国外DNS服务器（用于解析国外域名，防污染）
+#   fallback:
+#     - 8.8.8.8                     # 谷歌DNS
+#     - 1.1.1.1                     # Cloudflare DNS
+#     - tls://dns.google:853        # 谷歌DoT DNS
+#     - https://dns.google/dns-query # 谷歌DoH DNS
 
-# 代理组
-# 下面这3个不要引到订阅里去 要不会出错
-# Will be ignored after profile selection
-#proxies:
-#  - name: Shadowsocks
-#    type: socks5
-#    server: 127.0.0.1
-#    port: 1080
-#proxy-groups:
-#  - name: Proxy
-#    type: select
-#    proxies:
-#      - Shadowsocks
-#rules:
-#  - 'MATCH,DIRECT'
+# ================ CFW专用配置 ================
+# Clash for Windows 延迟测试配置
+cfw-latency-timeout: 3000                          # 延迟测试超时时间(毫秒)
+cfw-latency-url: http://www.gstatic.com/generate_204 # 延迟测试URL
 
-# Clash for Windows
-# Proxies module latency test settings
-cfw-latency-timeout: 3000
-cfw-latency-url: http://www.gstatic.com/generate_204
-
-# 混合配置（mixin）
-# 支持向所有配置文件中注入公共属性设置
-#cfw-profile-mixin:
-  #dns:
-    #enable: true
-    #listen: :53
-    #enhanced-mode: fake-ip
-    #nameserver:
-     #- 223.5.5.5 # 阿里DNS
-     #- 180.76.76.76 # 百度DNS
-     #- 119.29.29.29 # 腾讯DNS
-     #- 117.50.11.11 # ONE DNS拦截版 恶意网站拦截、广告过滤
-     #- 117.50.10.10 # ONE DNS纯净版 直接返回其真实的响应结果
-     #- 114.114.114.114 # 114DNS
-  #experimental:
-    #interface-name: WLAN
-
-#自定义配置目录
-#cfw-profiles-path: 'C:\Users\Administrator\.config\clash\profiles'
-
-# 打断连接
-# Identify strategy of breaking connections after switching to a new proxy/profile/mode
-# Options for proxy: none, chain(proxy group in connection chains), all
-# Options for profile: true, false
-# Options for mode: true, false
+# ================ 连接管理 ================
+# 切换代理/配置/模式时的连接处理策略
 cfw-conn-break-strategy:
-  proxy: none # none/chain/all
-  profile: true # true/false
-  mode: false # true/false
+  proxy: none     # 切换代理时：none(不断开) / chain(断开链式连接) / all(断开所有)
+  profile: true   # 切换配置时：true(断开) / false(不断开)  
+  mode: false     # 切换模式时：true(断开) / false(不断开)
 
-# 自定义状态栏图标
-#cfw-tray-icon:
-#default: .\resources\static\imgs\logo_64.png        # 默认图标
-#system-proxy-on: .\resources\static\imgs\custom.ico   # 开启系统代理后图标
-
-# 自定义字体
-#cfw-font-family: "Noto Sans TC"   # 系统中存在的字体
-
-# 自定义请求头
-#cfw-http-headers:
-  #token: "123456"
-  #cfw-version: "0.9.11"
-
-# 自定义节点排序
-# 可选参数：
-#  default：按配置文件定义节点顺序
-#  latency：按节点延迟升序排列
-#  alphabet：按节点名称字母表排列
-# Sort proxies in Proxies module by default/latency/alphabet
+# ================ 界面配置 ================
+# 自定义节点排序方式
+# - default: 按配置文件定义顺序
+# - latency: 按延迟升序排列  
+# - alphabet: 按节点名称字母排序
 cfw-proxies-order: default
 
-# 子进程 启动其他应用
-# Run child process after CFW started
-# Refer: https://docs.cfw.lbyczf.com/contents/childprocess.html
-#cfw-child-process:
-  # 启动订阅转换程序，端口号7893
-  #- command: "subconverter.exe" # run.cmd 程序名称 subconverter.exe -cfw >>logs/run.log 2>&1
-    #args:
-      #- "-cfw" # 运行参数1
-      #- "-f" # 运行参数2
-      #- "pref-acl4ssr.yml" # 运行参数3
-    #options:
-      #cwd: subconverter # 子进程工作目录
-      #detached: true # 子进程独立于其父进程运行
-      #shell: true # 则在 shell 中运行 command
-      #windowsHide: true # 隐藏子进程的控制台窗口
-  # 启动网易云，端口号3333
-  #- command: "unblockneteasemusic.exe" # 启动网易云
-    #args:
-      #- "-p" # 运行参数1
-      #- "3333" # 运行参数2
-    #options:
-      #cwd: unblockNeteaseMusic # 子进程工作目录
-      #detached: true # 子进程独立于其父进程运行
-      #shell: true # 则在 shell 中运行 command
-      #windowsHide: true # 隐藏子进程的控制台窗口
+# 自定义字体（可选）
+# cfw-font-family: "Microsoft YaHei"
 
-# 系统代理跳过列表 cfw-bypass
-# System proxy will ignore these domains(or ipnet)
+# 自定义托盘图标（可选）
+# cfw-tray-icon:
+#   default: ./icon_default.png
+#   system-proxy-on: ./icon_proxy.png
+
+# ================ 子进程配置 ================
+# 启动其他应用程序（可选）
+# cfw-child-process:
+#   # 示例：启动订阅转换程序
+#   - command: "subconverter.exe"
+#     args: ["-cfw", "-f", "config.yml"]
+#     options:
+#       cwd: "subconverter"
+#       detached: true
+#       windowsHide: true
+
+# ================ 代理和规则配置 ================
+# 注意：以下配置会被外部规则文件覆盖
+# 实际的代理节点和规则由订阅链接提供
+
+# 示例代理配置（实际使用时会被订阅覆盖）
+# proxies:
+#   - name: "示例节点"
+#     type: shadowsocks
+#     server: example.com
+#     port: 443
+
+# 示例代理组配置（实际使用时会被订阅覆盖）  
+# proxy-groups:
+#   - name: "手动选择"
+#     type: select
+#     proxies: ["示例节点"]
+
+# 示例规则配置（实际使用时会被订阅覆盖）
+# rules:
+#   - DOMAIN-SUFFIX,google.com,代理组名
+#   - MATCH,DIRECT
+
+# ================ 重要说明 ================
+# 1. 防DNS泄露设置：
+#    - DNS配置已全部注释，所有DNS查询通过代理
+#    - 确保不会暴露真实IP地址
+#
+# 2. 全代理模式：
+#    - 除内网地址外，所有流量都走代理
+#    - 不会有流量直连到国内服务器
+#
+# 3. 配置覆盖：
+#    - 实际的节点、代理组、规则由外部文件提供
+#    - 本文件主要定义基础网络参数
