@@ -1,0 +1,58 @@
+[custom]
+;全代理模式配置，无直连，防DNS泄露
+;适用于subconverter转换
+;规则集定义 - 本地规则模式
+ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,local
+ruleset=🏠 内网直连,[]IP-CIDR,10.0.0.0/8,no-resolve
+ruleset=🏠 内网直连,[]IP-CIDR,172.16.0.0/12,no-resolve
+ruleset=🏠 内网直连,[]IP-CIDR,192.168.0.0/16,no-resolve
+ruleset=🏠 内网直连,[]IP-CIDR,127.0.0.0/8,no-resolve
+;YOUTUBE规则
+ruleset=📹 YOUTUBE,[]DOMAIN-SUFFIX,youtube.com
+ruleset=📹 YOUTUBE,[]DOMAIN-SUFFIX,googlevideo.com
+ruleset=📹 YOUTUBE,[]DOMAIN-SUFFIX,youtube-nocookie.com
+ruleset=📹 YOUTUBE,[]DOMAIN-SUFFIX,youtubeusercontent.com
+ruleset=📹 YOUTUBE,[]DOMAIN-KEYWORD,youtube
+ruleset=📹 YOUTUBE,[]IP-CIDR,172.110.32.0/21,no-resolve
+ruleset=📹 YOUTUBE,[]IP-CIDR,216.73.80.0/20,no-resolve
+ruleset=📹 YOUTUBE,[]IP-CIDR,142.250.0.0/16,no-resolve
+ruleset=📹 YOUTUBE,[]DOMAIN-KEYWORD,teams.microsoft.com
+ruleset=📹 YOUTUBE,[]DOMAIN-SUFFIX,teams.microsoft.com
+ruleset=📹 YOUTUBE,[]DOMAIN-SUFFIX,1ioqq7.captcha-open.aliyuncs.com
+;OpenAI规则
+ruleset=🤖 openai,[]DOMAIN-KEYWORD,chatgpt
+ruleset=🤖 openai,[]IP-CIDR,104.18.0.0/16,no-resolve
+ruleset=🤖 openai,[]IP-CIDR,160.79.0.0/16,no-resolve
+ruleset=🤖 openai,[]DOMAIN-KEYWORD,cursor
+ruleset=🤖 openai,[]IP-CIDR,107.148.47.3/32,no-resolve
+ruleset=🤖 openai,[]DOMAIN-KEYWORD,claude
+;Splashtop规则
+ruleset=🖥️ splashtop,[]DOMAIN-KEYWORD,splashtop
+;默认规则 - 所有其他流量
+ruleset=🇭🇰 家庭香港,[]FINAL
+;策略组定义
+;家庭香港组 - 包含香港、韩国、新加坡节点
+custom_proxy_group=🇭🇰 家庭香港`select`(?i)(香港|Hong|hk|韩国|korea|kr|新加坡|singapore|sg)
+;YOUTUBE组 - 包含所有节点
+custom_proxy_group=📹 YOUTUBE`select`[]🇭🇰 家庭香港`[]🐶 狗狗云`[]🌲 树洞云`[]⚡ 专线云`[]🚀 火箭云`[]🌙 白月光`.*
+;OpenAI组 - 包含所有节点
+custom_proxy_group=🤖 openai`select`[]🇭🇰 家庭香港`[]🐶 狗狗云`[]🌲 树洞云`[]⚡ 专线云`[]🚀 火箭云`[]🌙 白月光`.*
+;Splashtop组 - 包含所有节点
+custom_proxy_group=🖥️ splashtop`select`[]🇭🇰 家庭香港`[]🐶 狗狗云`[]🌲 树洞云`[]⚡ 专线云`[]🚀 火箭云`[]🌙 白月光`.*
+;狗狗云组 - 包含名字带|符号的节点
+custom_proxy_group=🐶 狗狗云`select`(?=.*\|).*
+;树洞云组 - 包含名字带-符号且包含Basic或Pro的节点
+custom_proxy_group=🌲 树洞云`select`(?=.*-)(?=.*(Basic|Pro)).*
+;专线云组 - 包含名字带专线的节点
+custom_proxy_group=⚡ 专线云`select`(?=.*专线).*
+;火箭云组 - 包含名字带VIP或隧道的节点
+custom_proxy_group=🚀 火箭云`select`(?=.*(VIP|隧道)).*
+;白月光组 - 国家名+数字01-09格式的节点
+custom_proxy_group=🌙 白月光`select`(?i)^.*(香港|新加坡|美国|日本|韩国|台湾|英国|德国|法国|加拿大|澳大利亚|俄罗斯|印度|泰国|马来西亚|菲律宾|越南|印尼|土耳其|巴西|阿根廷|墨西哥|南非|埃及|以色列|阿联酋|沙特|伊朗|巴基斯坦|孟加拉|缅甸|柬埔寨|老挝|斯里兰卡|尼泊尔|不丹|马尔代夫|hong|singapore|america|japan|korea|taiwan|britain|germany|france|canada|australia|russia|india|thailand|malaysia|philippines|vietnam|indonesia|turkey|brazil|argentina|mexico|africa|egypt|israel|emirates|saudi|iran|pakistan|bangladesh|myanmar|cambodia|laos|lanka|nepal|bhutan|maldives)(0[1-9]).*$
+;内网直连组
+custom_proxy_group=🏠 内网直连`select`[]DIRECT
+;启用规则集生成器
+enable_rule_generator=true
+overwrite_original_rules=true
+;DNS设置（防泄露）
+clash_rule_base=https://raw.githubusercontent.com/vetus2/shuaishuai21313123/refs/heads/main/GeneralClashConfig.yml
