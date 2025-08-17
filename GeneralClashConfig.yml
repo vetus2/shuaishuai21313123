@@ -23,10 +23,9 @@ dns:
   ipv6: false                           # 禁用IPv6 DNS解析
   enhanced-mode: fake-ip                # 使用fake-ip模式
   fake-ip-range: 198.18.0.1/16         # fake-ip地址池
-  fake-ip-filter:                       # 最小化白名单，减少真实IP泄露
-    - '*.lan'
-    - '*.local'
-    - 'localhost.ptlogin2.qq.com'       # QQ登录必需
+  fake-ip-filter:                       # 极简白名单，最大化隐匿
+    - '*.lan'                            # 局域网域名（如 router.lan）
+    - '*.local'                          # 本地域名（如 printer.local）
     
   # 不设置任何 nameserver - 强制所有DNS查询通过代理！
   # 这是完全隐匿的关键：连DNS查询都不走本地
@@ -37,6 +36,10 @@ dns:
     - 'https://8.8.8.8/dns-query'        # Google DoH 通过代理
     - 'tls://1.1.1.1:853'               # Cloudflare DoT 通过代理
     - 'tls://8.8.4.4:853'               # Google DoT 通过代理
+    - 'https://doh.opendns.com/dns-query' # OpenDNS DoH 通过代理
+    - 'https://doh.familyshield.opendns.com/dns-query' # OpenDNS FamilyShield DoH 通过代理
+    - '208.67.222.222:53'               # OpenDNS 主服务器 通过代理
+    - '208.67.220.220:53'               # OpenDNS 备用服务器 通过代理
     - 'https://dns.quad9.net/dns-query'  # Quad9 DoH 通过代理
     
   # 关键：禁用所有过滤器，强制所有域名都使用fallback
