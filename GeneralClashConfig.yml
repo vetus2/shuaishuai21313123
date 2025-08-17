@@ -1,175 +1,90 @@
 #---------------------------------------------------#
-# Clash 配置文件 - 全代理模式，防DNS泄露
-# 配置文件需要放置在 $HOME/.config/clash/config.yml
-# 或者运行目录下的config.yml
+# OpenClash 完全隐匿配置文件
+# 所有流量走代理，无直连，完全防DNS泄露
+# 适用于需要完全隐匿的场景
 #---------------------------------------------------#
 
-# ================ 端口配置 ================
-# 混合端口 - HTTP和SOCKS5用一个端口（推荐使用）
+# ================ 基础设置 ================
 mixed-port: 7890
-
-# HTTP 代理端口（如果使用mixed-port可以注释掉）
-# port: 7890
-
-# SOCKS5 代理端口
-socks-port: 7891
-
-# Linux 和 macOS 的 redir 代理端口（透明代理，如需使用请取消注释）
-# redir-port: 7892
-
-# ================ 网络配置 ================
-# 允许局域网连接（可用来共享代理给其他设备）
 allow-lan: true
-
-# 绑定地址配置（仅在allow-lan为true时生效）
-# "*": 绑定所有IP地址（局域网内所有设备都可连接）
-# "192.168.1.100": 绑定单个IPv4地址
-# "[::1]": 绑定单个IPv6地址
-bind-address: "*"
-
-# 启用IPv6支持
-ipv6: true
-
-# ================ 运行模式 ================
-# 规则模式：
-# - rule: 根据规则分流（推荐）
-# - global: 全局代理（所有流量走代理）
-# - direct: 全局直连（所有流量直连）
-# - script: 脚本模式
-# mode: rule  # 这里注释掉，让规则文件控制模式
-
-# ================ 日志配置 ================
-# 日志级别：silent(无日志) / error / warning / info / debug
-# 建议使用info级别，便于调试问题
+bind-address: '*'
+mode: rule
 log-level: info
+ipv6: false
 
-# ================ API配置 ================
-# Clash RESTful API地址（用于网页控制面板）
-external-controller: '127.0.0.1:9090'
+# ================ API 接口 ================
+external-controller: :9090
+secret: ""
 
-# 网页控制面板静态资源目录
-# 常用面板：
-# - yacd: https://github.com/haishanh/yacd
-# - Razord: http://clash.razord.top/#/proxies
-# - 访问地址: http://127.0.0.1:9090/ui/#/
-# external-ui: dashboard
+# ================ DNS配置（完全隐匿关键） ================
+dns:
+  enable: true                           # 启用DNS服务
+  listen: 0.0.0.0:53                    # DNS监听地址
+  ipv6: false                           # 禁用IPv6 DNS解析
+  enhanced-mode: fake-ip                # 使用fake-ip模式
+  fake-ip-range: 198.18.0.1/16         # fake-ip地址池
+  fake-ip-filter:                       # 最小化白名单，减少真实IP泄露
+    - '*.lan'
+    - '*.local'
+    - 'localhost.ptlogin2.qq.com'       # QQ登录必需
+    
+  # 不设置任何 nameserver - 强制所有DNS查询通过代理！
+  # 这是完全隐匿的关键：连DNS查询都不走本地
+  
+  # 所有DNS查询都通过代理的国外DNS服务器
+  fallback:
+    - 'https://1.1.1.1/dns-query'        # Cloudflare DoH 通过代理
+    - 'https://8.8.8.8/dns-query'        # Google DoH 通过代理
+    - 'tls://1.1.1.1:853'               # Cloudflare DoT 通过代理
+    - 'tls://8.8.4.4:853'               # Google DoT 通过代理
+    - 'https://dns.quad9.net/dns-query'  # Quad9 DoH 通过代理
+    
+  # 关键：禁用所有过滤器，强制所有域名都使用fallback
+  fallback-filter:
+    geoip: false                        # 禁用GeoIP过滤
+    # 不设置任何过滤条件，所有域名都走fallback（代理）
 
-# API访问密码（可选，建议设置）
-# secret: "your_password_here"
+# ================ TUN设置 ================
+tun:
+  enable: true                          # 启用TUN模式
+  stack: system                         # 使用系统网络栈
+  auto-route: true                      # 自动路由
+  auto-detect-interface: true           # 自动检测接口
+  dns-hijack:                           # DNS劫持所有查询
+    - any:53                            # 劫持所有DNS查询
+    - tcp://any:53
+    - udp://any:53
 
 # ================ 实验性功能 ================
 experimental:
-  # 忽略DNS解析失败（防止因DNS问题导致连接中断）
-  ignore-resolve-fail: true
-  # 指定出站网络接口（可选）
-  # interface-name: en0
+  ignore-resolve-fail: true            # 忽略DNS解析失败
 
-# ================ 认证配置 ================
-# 本地SOCKS5/HTTP(S)服务认证（可选）
-# authentication:
-#   - "username1:password1"
-#   - "username2:password2"
+# ================ 代理设置 ================
+proxies: []                             # 代理节点由订阅提供
 
-# ================ Hosts配置 ================
-# 静态域名解析（在fake-ip模式下不生效）
-# hosts:
-#   '*.example.com': 127.0.0.1
-#   'test.example.com': '::1'
+# ================ 代理组设置 ================
+proxy-groups: []                        # 代理组由订阅转换模板提供
 
-# ================ DNS配置（已禁用，防泄露） ================
-# 注意：为了防止DNS泄露，这里将DNS配置全部注释掉
-# 所有DNS查询将通过代理服务器进行，确保不会泄露真实IP
+# ================ 规则设置 ================
+rules: []                               # 规则由订阅转换模板提供
 
-# dns:
-#   enable: true                    # 是否启用DNS
-#   ipv6: false                     # 是否解析IPv6
-#   listen: 0.0.0.0:53             # DNS监听地址
-#   enhanced-mode: redir-host       # DNS模式：redir-host(真实IP) / fake-ip(虚假IP)
-#   fake-ip-range: 198.18.0.1/16    # fake-ip地址段
-#   
-#   # 国内DNS服务器（速度快但可能被污染）
-#   nameserver:
-#     - 223.5.5.5                   # 阿里DNS
-#     - 180.76.76.76                # 百度DNS  
-#     - 119.29.29.29                # 腾讯DNS
-#     - 114.114.114.114             # 114DNS
-#     
-#   # 国外DNS服务器（用于解析国外域名，防污染）
-#   fallback:
-#     - 8.8.8.8                     # 谷歌DNS
-#     - 1.1.1.1                     # Cloudflare DNS
-#     - tls://dns.google:853        # 谷歌DoT DNS
-#     - https://dns.google/dns-query # 谷歌DoH DNS
-
-# ================ CFW专用配置 ================
-# Clash for Windows 延迟测试配置
-cfw-latency-timeout: 3000                          # 延迟测试超时时间(毫秒)
-cfw-latency-url: http://www.gstatic.com/generate_204 # 延迟测试URL
-
-# ================ 连接管理 ================
-# 切换代理/配置/模式时的连接处理策略
-cfw-conn-break-strategy:
-  proxy: none     # 切换代理时：none(不断开) / chain(断开链式连接) / all(断开所有)
-  profile: true   # 切换配置时：true(断开) / false(不断开)  
-  mode: false     # 切换模式时：true(断开) / false(不断开)
-
-# ================ 界面配置 ================
-# 自定义节点排序方式
-# - default: 按配置文件定义顺序
-# - latency: 按延迟升序排列  
-# - alphabet: 按节点名称字母排序
-cfw-proxies-order: default
-
-# 自定义字体（可选）
-# cfw-font-family: "Microsoft YaHei"
-
-# 自定义托盘图标（可选）
-# cfw-tray-icon:
-#   default: ./icon_default.png
-#   system-proxy-on: ./icon_proxy.png
-
-# ================ 子进程配置 ================
-# 启动其他应用程序（可选）
-# cfw-child-process:
-#   # 示例：启动订阅转换程序
-#   - command: "subconverter.exe"
-#     args: ["-cfw", "-f", "config.yml"]
-#     options:
-#       cwd: "subconverter"
-#       detached: true
-#       windowsHide: true
-
-# ================ 代理和规则配置 ================
-# 注意：以下配置会被外部规则文件覆盖
-# 实际的代理节点和规则由订阅链接提供
-
-# 示例代理配置（实际使用时会被订阅覆盖）
-# proxies:
-#   - name: "示例节点"
-#     type: shadowsocks
-#     server: example.com
-#     port: 443
-
-# 示例代理组配置（实际使用时会被订阅覆盖）  
-# proxy-groups:
-#   - name: "手动选择"
-#     type: select
-#     proxies: ["示例节点"]
-
-# 示例规则配置（实际使用时会被订阅覆盖）
-# rules:
-#   - DOMAIN-SUFFIX,google.com,代理组名
-#   - MATCH,DIRECT
-
-# ================ 重要说明 ================
-# 1. 防DNS泄露设置：
-#    - DNS配置已全部注释，所有DNS查询通过代理
-#    - 确保不会暴露真实IP地址
+# ================ 完全隐匿配置说明 ================
+# 1. DNS完全隐匿：
+#    - 不设置任何nameserver，避免本地DNS查询
+#    - 所有DNS查询都通过fallback（代理）完成
+#    - 禁用GeoIP过滤，确保没有域名走本地DNS
 #
-# 2. 全代理模式：
-#    - 除内网地址外，所有流量都走代理
-#    - 不会有流量直连到国内服务器
+# 2. 流量完全代理：
+#    - 配合订阅转换模板，所有规则都指向代理组
+#    - 不使用绕过大陆功能
+#    - FINAL规则也指向代理组
 #
-# 3. 配置覆盖：
-#    - 实际的节点、代理组、规则由外部文件提供
-#    - 本文件主要定义基础网络参数
+# 3. 防泄露机制：
+#    - fake-ip模式避免真实DNS查询
+#    - DNS劫持确保所有查询被Clash处理
+#    - 最小化fake-ip-filter减少真实IP暴露
+#
+# 4. 性能考虑：
+#    - 所有流量走代理会增加延迟
+#    - DNS解析会比较慢（都通过代理）
+#    - 建议选择延迟低的节点
