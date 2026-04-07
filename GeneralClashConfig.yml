@@ -1,7 +1,7 @@
 #---------------------------------------------------#
-# OpenClash 完全隐匿配置文件 - 最终版
-# 所有流量走代理，无直连，完全防DNS泄露
-# 使用 fake-ip 模式实现最大程度隐匿
+# OpenClash 完全隐匿配置模板
+# 全流量走代理，无直连，完全防DNS泄露
+# fake-ip 模式，最小白名单
 #---------------------------------------------------#
 
 # ================ 基础设置 ================
@@ -11,118 +11,103 @@ bind-address: '*'
 mode: rule
 log-level: info
 ipv6: false
+unified-delay: true
+tcp-concurrent: true
 
 # ================ API 接口 ================
-external-controller: :9090
+external-controller: '0.0.0.0:9090'
 secret: ""
 
 # ================ 配置文件设置 ================
 profile:
-  store-selected: false                 # 不保存策略组选择
-  store-fake-ip: false                  # 不保存fake-ip映射
+  store-selected: true        # 保存策略组选择，重启不丢
+  store-fake-ip: true         # 保存fake-ip映射，重启不丢
 
-# ================ DNS配置（完全隐匿关键） ================
+# ================ DNS配置 ================
 dns:
-  enable: true                          # 启用DNS服务
-  listen: 0.0.0.0:53                   # DNS监听地址
-  ipv6: false                          # 禁用IPv6 DNS解析
-  enhanced-mode: fake-ip               # 使用fake-ip模式（隐匿关键）
-  fake-ip-range: 198.18.0.1/16        # fake-ip地址池
-  fake-ip-filter:                      # 只保留真正必要的本地域名
-    - '*.lan'                          # 路由器管理界面
-    - '*.local'                        # 本地设备发现
-    # 完全隐匿：不添加任何其他例外
-    
-  # 重要：不设置任何 nameserver
-  # 强制所有DNS查询都通过代理服务器！
-  
-  # 所有DNS查询都通过代理的海外DNS服务器
-  fallback:
-    - 'https://1.1.1.1/dns-query'       # Cloudflare DoH 通过代理
-    - 'https://8.8.8.8/dns-query'       # Google DoH 通过代理  
-    - 'tls://1.1.1.1:853'              # Cloudflare DoT 通过代理
-    - 'tls://8.8.4.4:853'              # Google DoT 通过代理
-    - 'https://doh.opendns.com/dns-query' # OpenDNS DoH 通过代理
-    - 'https://dns.quad9.net/dns-query'  # Quad9 DoH 通过代理
-    - '208.67.222.222:53'               # OpenDNS 主服务器 通过代理
-    - '208.67.220.220:53'               # OpenDNS 备用服务器 通过代理
-    
-  # 关键：强制所有域名都使用fallback（代理DNS）
-  fallback-filter:
-    geoip: false                        # 完全禁用GeoIP过滤
-    geoip-code: '!CN'                   # 强制非中国IP走fallback
-    ipcidr: []                          # 清空所有IP过滤条件
-    domain: []                          # 清空所有域名过滤条件
+  enable: true                # 必须开启，配合OpenClash DNS覆写
+  listen: 0.0.0.0:53          # 监听所有接口的53端口
+  ipv6: false                 # 禁用IPv6 DNS解析
 
-# ================ TUN设置（最严格模式） ================
-tun:
-  enable: true                          # 启用TUN模式
-  stack: system                         # 使用系统网络栈
-  device: utun                          # 指定TUN设备名
-  auto-route: true                      # 自动路由
-  auto-detect-interface: true           # 自动检测网络接口
-  strict-route: true                    # 严格路由：防止任何流量绕过
-  endpoint-independent-nat: false       # 禁用端点无关NAT
-  dns-hijack:                           # DNS劫持：捕获所有DNS查询
-    - any:53                            # 劫持所有端口53的查询
-    - tcp://any:53                      # 劫持TCP DNS查询
-    - udp://any:53                      # 劫持UDP DNS查询
+  enhanced-mode: fake-ip      # fake-ip模式，所有域名不做真实解析
+  fake-ip-range: 198.18.0.1/16
+
+  # 最小白名单：只保留局域网必要域名
+  fake-ip-filter:
+    - '*.lan'                 # 路由器/局域网设备管理
+    - '*.local'               # 本地设备发现（NAS、打印机等）
+
+  # default-nameserver 仅用于解析 DoH/DoT 服务器域名本身（启动时用）
+  # 用国内DNS是合理的，它只负责解析 1.1.1.1/8.8.8.8 这类域名，不参与业务DNS
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  # 主DNS：全部走海外加密DNS（经由代理）
+  nameserver:
+    - 'https://1.1.1.1/dns-query'        # Cloudflare DoH
+    - 'https://8.8.8.8/dns-query'        # Google DoH
+    - 'tls://1.1.1.1:853'                # Cloudflare DoT
+    - 'tls://8.8.4.4:853'                # Google DoT
+
+  # fallback：与nameserver保持一致
+  fallback:
+    - 'https://dns.cloudflare.com/dns-query'
+    - 'https://dns.google/dns-query'
+    - 'tls://1.1.1.1:853'
+    - 'tls://8.8.8.8:853'
+
+  # fallback-filter：关闭所有过滤，强制所有查询走海外DNS
+  fallback-filter:
+    geoip: false              # 禁用GeoIP过滤
+    ipcidr: []                # 清空IP过滤
+    domain: []                # 清空域名过滤
 
 # ================ 实验性功能 ================
 experimental:
-  ignore-resolve-fail: true            # 忽略DNS解析失败
-  sniff-tls-sni: true                  # 启用TLS SNI嗅探
-  sniff-http-host: true                # 启用HTTP Host嗅探
+  ignore-resolve-fail: true   # DNS解析失败时忽略，不中断连接
+  sniff-tls-sni: true         # TLS SNI嗅探，提高域名匹配准确性
+  sniff-http-host: true       # HTTP Host嗅探
 
-# ================ 代理设置 ================
-proxies: []                             # 代理节点由订阅提供
+# ================ 代理节点（由订阅提供） ================
+proxies: []
 
-# ================ 代理组设置 ================
-proxy-groups: []                        # 代理组由订阅转换模板提供
+# ================ 代理组（由订阅转换模板提供） ================
+proxy-groups: []
 
-# ================ 规则设置 ================
-rules: []                               # 规则由订阅转换模板提供
+# ================ 规则（由订阅转换模板提供） ================
+rules: []
 
-# ================ 完全隐匿配置说明 ================
-# 
-# 【隐匿级别：最高】
-# 
-# 1. DNS完全隐匿：
-#    ✓ fake-ip模式：所有域名都不进行真实DNS解析
-#    ✓ 无nameserver：避免任何本地DNS查询
-#    ✓ 纯代理DNS：所有DNS查询都通过海外代理服务器
-#    ✓ 无过滤器：确保没有域名走本地解析
-#    ✓ SNI嗅探：提高域名匹配准确性
+# ================ 配套订阅转换规则说明 ================
 #
-# 2. 流量完全代理：
-#    ✓ 严格路由：防止系统级流量绕过
-#    ✓ 全端口劫持：捕获所有DNS查询
-#    ✓ 配合规则：所有非内网流量走代理
-#    ✓ 无直连例外：除内网外无任何直连
+# 在 Subconverter 的 INI 模板中，rules 部分建议如下顺序：
 #
-# 3. 防泄露机制：
-#    ✓ fake-ip避免真实DNS解析
-#    ✓ DNS劫持捕获所有查询
-#    ✓ 最小白名单减少真实IP暴露
-#    ✓ 严格路由防止系统绕过
-#    ✓ 端点无关NAT禁用防P2P泄露
+# ruleset=🏠 内网直连,[]IP-CIDR,127.0.0.0/8,no-resolve
+# ruleset=🏠 内网直连,[]IP-CIDR,10.0.0.0/8,no-resolve
+# ruleset=🏠 内网直连,[]IP-CIDR,172.16.0.0/12,no-resolve
+# ruleset=🏠 内网直连,[]IP-CIDR,192.168.0.0/16,no-resolve
+# ruleset=🏠 内网直连,[]IP-CIDR,169.254.0.0/16,no-resolve
+# ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,lan
+# ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,local
+# ruleset=🇭🇰 家庭香港,[]IP-CIDR,0.0.0.0/0,no-resolve
+# ruleset=🇭🇰 家庭香港,[]MATCH
 #
-# 4. 使用注意事项：
-#    ⚠️ 某些软件可能无法正常工作（QQ、微信、网银等）
-#    ⚠️ 所有流量走代理会增加延迟
-#    ⚠️ DNS解析较慢（通过代理查询）
-#    ⚠️ 需要高质量代理节点
-#    ⚠️ 可能影响本地网络设备发现
+# ================ OpenClash 覆写设置建议 ================
 #
-# 5. 配套订阅转换规则：
-#    ruleset=🏠 内网直连,[]IP-CIDR,127.0.0.0/8,no-resolve
-#    ruleset=🏠 内网直连,[]IP-CIDR,10.0.0.0/8,no-resolve
-#    ruleset=🏠 内网直连,[]IP-CIDR,172.16.0.0/12,no-resolve  
-#    ruleset=🏠 内网直连,[]IP-CIDR,192.168.0.0/16,no-resolve
-#    ruleset=🏠 内网直连,[]IP-CIDR,169.254.0.0/16,no-resolve
-#    ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,lan
-#    ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,local
-#    ruleset=🇭🇰 家庭香港,[]IP-CIDR,0.0.0.0/0,no-resolve
-#    ruleset=🇭🇰 家庭香港,[]MATCH
+# 后台 → 覆写设置 → DNS设置：
+#   ✓ DNS劫持：开启
+#   ✓ 本地DNS劫持：开启
+#   ✓ 禁止Dnsmasq缓存DNS：开启
+#   ✗ 追加上游DNS：关闭
+#   ✗ 追加自定义DNS：关闭
+#   ✗ 自定义上游DNS服务器：关闭（用本文件的配置）
 #
-# 【这是最彻底的隐匿配置，请确保你的使用场景需要如此高的隐匿级别】
+# ================ 注意事项 ================
+#
+# ⚠️ 完全隐匿模式下以下功能会受影响：
+#    - QQ/微信/国内应用可能异常（fake-ip导致）
+#    - 局域网设备发现受限（NAS、打印机等，已通过白名单缓解）
+#    - DNS解析延迟较高（经代理查询）
+#    - 需要高质量、低延迟的代理节点
+#
+# ✓ 此配置兼容各类机场订阅，节点和规则由订阅转换后覆盖
