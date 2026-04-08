@@ -1,10 +1,8 @@
 #---------------------------------------------------#
-# OpenClash 完全隐匿配置模板
-# 全流量走代理，无直连，完全防DNS泄露
-# fake-ip 模式，最小白名单
+# OpenClash 配置模板
+# fake-ip 模式，国内DNS加速，海外fallback
 #---------------------------------------------------#
 
-# ================ 基础设置 ================
 mixed-port: 7890
 allow-lan: true
 bind-address: '*'
@@ -14,100 +12,58 @@ ipv6: false
 unified-delay: true
 tcp-concurrent: true
 
-# ================ API 接口 ================
 external-controller: '0.0.0.0:9090'
 secret: ""
 
-# ================ 配置文件设置 ================
 profile:
-  store-selected: true        # 保存策略组选择，重启不丢
-  store-fake-ip: true         # 保存fake-ip映射，重启不丢
+  store-selected: true
+  store-fake-ip: true
 
-# ================ DNS配置 ================
 dns:
-  enable: true                # 必须开启，配合OpenClash DNS覆写
-  listen: 0.0.0.0:53          # 监听所有接口的53端口
-  ipv6: false                 # 禁用IPv6 DNS解析
-
-  enhanced-mode: fake-ip      # fake-ip模式，所有域名不做真实解析
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false
+  enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
 
-  # 最小白名单：只保留局域网必要域名
   fake-ip-filter:
-    - '*.lan'                 # 路由器/局域网设备管理
-    - '*.local'               # 本地设备发现（NAS、打印机等）
+    - '*.lan'
+    - '*.local'
 
-  # default-nameserver 仅用于解析 DoH/DoT 服务器域名本身（启动时用）
-  # 用国内DNS是合理的，它只负责解析 1.1.1.1/8.8.8.8 这类域名，不参与业务DNS
+  # 仅用于启动时解析DoH/DoT服务器域名
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
 
-  # 主DNS：全部走海外加密DNS（经由代理）
+  # 主DNS：国内加密DNS，速度快
+  # fake-ip模式下DNS结果不对外暴露，不存在泄露问题
   nameserver:
-    - 'https://1.1.1.1/dns-query'        # Cloudflare DoH
-    - 'https://8.8.8.8/dns-query'        # Google DoH
-    - 'tls://1.1.1.1:853'                # Cloudflare DoT
-    - 'tls://8.8.4.4:853'                # Google DoT
+    - 'https://doh.pub/dns-query'
+    - 'https://dns.alidns.com/dns-query'
+    - 'tls://dot.pub:853'
+    - 'tls://dns.alidns.com:853'
 
-  # fallback：与nameserver保持一致
+  # fallback：海外DNS，非CN IP时触发
   fallback:
-    - 'https://dns.cloudflare.com/dns-query'
-    - 'https://dns.google/dns-query'
+    - 'https://1.1.1.1/dns-query'
+    - 'https://8.8.8.8/dns-query'
     - 'tls://1.1.1.1:853'
-    - 'tls://8.8.8.8:853'
+    - 'tls://8.8.4.4:853'
 
-  # fallback-filter：关闭所有过滤，强制所有查询走海外DNS
+  # 解析到非中国IP时走fallback
   fallback-filter:
-    geoip: false              # 禁用GeoIP过滤
-    ipcidr: []                # 清空IP过滤
-    domain: []                # 清空域名过滤
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+      - 0.0.0.0/8
+    domain: []
 
-# ================ 实验性功能 ================
 experimental:
-  ignore-resolve-fail: true   # DNS解析失败时忽略，不中断连接
-  sniff-tls-sni: true         # TLS SNI嗅探，提高域名匹配准确性
-  sniff-http-host: true       # HTTP Host嗅探
+  ignore-resolve-fail: true
+  sniff-tls-sni: true
+  sniff-http-host: true
 
-# ================ 代理节点（由订阅提供） ================
 proxies: []
-
-# ================ 代理组（由订阅转换模板提供） ================
 proxy-groups: []
-
-# ================ 规则（由订阅转换模板提供） ================
 rules: []
-
-# ================ 配套订阅转换规则说明 ================
-#
-# 在 Subconverter 的 INI 模板中，rules 部分建议如下顺序：
-#
-# ruleset=🏠 内网直连,[]IP-CIDR,127.0.0.0/8,no-resolve
-# ruleset=🏠 内网直连,[]IP-CIDR,10.0.0.0/8,no-resolve
-# ruleset=🏠 内网直连,[]IP-CIDR,172.16.0.0/12,no-resolve
-# ruleset=🏠 内网直连,[]IP-CIDR,192.168.0.0/16,no-resolve
-# ruleset=🏠 内网直连,[]IP-CIDR,169.254.0.0/16,no-resolve
-# ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,lan
-# ruleset=🏠 内网直连,[]DOMAIN-SUFFIX,local
-# ruleset=🇭🇰 家庭香港,[]IP-CIDR,0.0.0.0/0,no-resolve
-# ruleset=🇭🇰 家庭香港,[]MATCH
-#
-# ================ OpenClash 覆写设置建议 ================
-#
-# 后台 → 覆写设置 → DNS设置：
-#   ✓ DNS劫持：开启
-#   ✓ 本地DNS劫持：开启
-#   ✓ 禁止Dnsmasq缓存DNS：开启
-#   ✗ 追加上游DNS：关闭
-#   ✗ 追加自定义DNS：关闭
-#   ✗ 自定义上游DNS服务器：关闭（用本文件的配置）
-#
-# ================ 注意事项 ================
-#
-# ⚠️ 完全隐匿模式下以下功能会受影响：
-#    - QQ/微信/国内应用可能异常（fake-ip导致）
-#    - 局域网设备发现受限（NAS、打印机等，已通过白名单缓解）
-#    - DNS解析延迟较高（经代理查询）
-#    - 需要高质量、低延迟的代理节点
-#
-# ✓ 此配置兼容各类机场订阅，节点和规则由订阅转换后覆盖
