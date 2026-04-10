@@ -12,7 +12,7 @@ secret: ""
 profile:
   store-selected: true
   store-fake-ip: true
-
+  update-interval: 0
 tun:
   enable: true
   stack: system
