@@ -20,8 +20,9 @@ tun:
   stack: system
   auto-route: true
   auto-detect-interface: true
-  strict-route: true
+  strict-route: true           # 严格路由，防止流量绕过
   udp-timeout: 300
+  endpoint-independent-nat: false  # 禁用端点无关NAT，防P2P泄露
   dns-hijack:
     - any:53
     - tcp://any:53
@@ -58,17 +59,21 @@ dns:
 
 sniffer:
   enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: false
   sniff:
     HTTP:
       ports: [80, 8080, 8880, 2052, 2082, 2086, 2095]
+      override-destination: true
     TLS:
       ports: [443, 8443, 2053, 2083, 2087, 2096]
     QUIC:
       ports: [443, 8443]
-  force-dns-mapping: true
-  parse-pure-ip: true
   skip-domain:
     - '+.push.apple.com'
+    - '+.apple.com'
+    - 'Mijia Cloud'
 
 experimental:
   ignore-resolve-fail: true
